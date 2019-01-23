@@ -7,6 +7,7 @@ target 'WallOfFame' do
 
     pod 'FBSDKLoginKit'
     pod 'FacebookLogin'
-    
+    pod 'Alamofire'
+    pod 'AlamofireImage'
 
 end
