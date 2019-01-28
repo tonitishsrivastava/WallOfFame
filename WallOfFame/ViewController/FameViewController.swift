@@ -20,7 +20,7 @@ class FameViewController: UIViewController {
     var page = 1
     var posts = [Post]()
     var toReloadSection: Int?
-    var noOfCellForSelectedSection: Int?
+    var rowsInEachSection = [[Int:Int]]()
     
     
     override func viewDidLoad() {
@@ -86,6 +86,7 @@ class FameViewController: UIViewController {
             self.present(alert, animated: true, completion: nil)
         }
     }
+    
     
     func blogFromOnlineData(_ data: Any, completion: @escaping (_ reaction: [Post]) -> Void) {
         
@@ -272,6 +273,7 @@ class FameViewController: UIViewController {
         completion(reaction)
     }
     
+    
     func fetchUser(post: [String : AnyObject], completion: @escaping (_ user: User?) -> Void){
         var user: User?
         guard let userObjects = post["user"] as? [String: AnyObject] else {
@@ -332,34 +334,69 @@ extension FameViewController: UITableViewDelegate, UITableViewDataSource  {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        var count = 2
+        var count = 1
         
-        switch section {
-        case self.toReloadSection:
-            if((self.posts[section].comments?.count)! > 0){
-                count += (self.posts[section].comments?.count)!
-                self.noOfCellForSelectedSection = count
+        if(self.toReloadSection != nil){
+            switch section {
+            case self.toReloadSection!:
+                if((self.posts[section].comments?.count)! > 0){
+                    count += (self.posts[section].comments?.count)!
+                }
+            default:
+                if (self.posts[section].comments?.count)! > 2{
+                    count += 3
+                }else{
+                    count += (self.posts[section].comments?.count)! + 1
+                }
+                count += 0
             }
-        default:
-            count += 0
+        }else{
+            if (self.posts[section].comments?.count)! > 2{
+                count += 3
+            }else{
+                count += (self.posts[section].comments?.count)! + 1
+            }
         }
         
+        self.rowsInEachSection.append([section:count])
         return count
         
     }
     
+    func getNumberOfRows(section: Int) -> Int{
+        if(rowsInEachSection.count > 0){
+            for rowKeyPair in rowsInEachSection{
+                if(rowKeyPair.keys.first == section){
+                    return rowKeyPair.values.first!
+                }
+            }
+        }
+        return 1
+    }
+    
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         var nCell = UITableViewCell()
-        
+        let lastCellNumber = self.getNumberOfRows(section: indexPath.section)
         let post = posts[indexPath.section]
         if(indexPath.row == 0){
             let cell = tableView.dequeueReusableCell(withIdentifier: "post", for: indexPath) as! PostTableViewCell
-                let post = post
-                cell.setViewData(post: post)
-                cell.selectionStyle = .none
-                nCell = cell
-        }else if(((self.toReloadSection == nil  && self.noOfCellForSelectedSection == nil) || self.toReloadSection != indexPath.section) &&  indexPath.row == indexPath.last){
+            let post = post
+            cell.setViewData(post: post)
+            cell.postCardView.clipsToBounds = true
+            cell.postCardView.layer.cornerRadius = 20
+            
+            if(lastCellNumber == 2 && self.toReloadSection != nil && self.toReloadSection == indexPath.section){
+                cell.postCardView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMaxYCorner]
+            }else{
+                cell.postCardView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
+            
+            
+            cell.selectionStyle = .none
+            nCell = cell
+        }else if((self.toReloadSection == nil || self.toReloadSection != indexPath.section) &&  indexPath.row == (lastCellNumber - 1) ){
             let cell = tableView.dequeueReusableCell(withIdentifier: "cmnt_btn_cell", for: indexPath) as! CommentButtonTableViewCell
             
             cell.seeCommentButton.tag = indexPath.section
@@ -369,20 +406,10 @@ extension FameViewController: UITableViewDelegate, UITableViewDataSource  {
             cell.commentContainerView.layer.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
             
             nCell = cell
-        }else if(self.noOfCellForSelectedSection != nil && self.toReloadSection != nil && indexPath.section == self.toReloadSection && indexPath.row == self.noOfCellForSelectedSection!-1){
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cmnt_btn_cell", for: indexPath) as! CommentButtonTableViewCell
             
-            cell.seeCommentButton.tag = indexPath.section
-            cell.seeCommentButton.addTarget(self, action: #selector(didTapCellButton(sender:)), for: .touchUpInside)
-            
-            cell.commentContainerView.clipsToBounds = true
-            cell.commentContainerView.layer.cornerRadius = 20
-            cell.commentContainerView.layer.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
-            
-            nCell = cell
-        }else if(self.noOfCellForSelectedSection != nil && self.toReloadSection != nil && indexPath.section == self.toReloadSection){
+        }else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "comments", for: indexPath) as! CommentTableViewCell
-            if ((post.comments?.count)!>0 && (post.comments?.count)! < self.noOfCellForSelectedSection!){
+            if ((post.comments?.count)!>0 && indexPath.row < lastCellNumber && indexPath.row > 0 ){
                 let comment = post.comments?[indexPath.row-1]
                 cell.comment_user_name.attributedText = getAttributedText(firstString: comment!.user!.name!, secondString: comment!.comment!, color: AppConstant.blueColor)
                 if let url1 = URL(string: ((comment!.user?.imageUrl)!)){
@@ -391,19 +418,27 @@ extension FameViewController: UITableViewDelegate, UITableViewDataSource  {
                     cell.comment_user_image.image = UIImage(named: "placeHolder")
                 }
                 
-                let previousDate = comment!.date!
-                let now = Date()
+                if(self.toReloadSection != nil && self.toReloadSection == indexPath.section && indexPath.row == lastCellNumber-2){
+                    cell.commentContainer.layer.cornerRadius = 20
+                }else{
+                    cell.commentContainer.layer.cornerRadius = 0
+                }
+                cell.commentContainer.clipsToBounds = true
+                cell.commentContainer.layer.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
+                let commentDate = comment!.date!
+                let todayDate = Date()
                 
                 let formatter = DateComponentsFormatter()
                 formatter.unitsStyle = .full
                 formatter.allowedUnits = [.year, .month, .day, .hour, .minute, .second]
-                formatter.maximumUnitCount = 1   // often, you don't care about seconds if the elapsed time is in months, so you'll set max unit to whatever is appropriate in your case
+                formatter.maximumUnitCount = 1  
                 
-                let dateDifference = formatter.string(from: previousDate, to: now)! + " " + "ago"
+                let dateDifference = formatter.string(from: commentDate, to: todayDate)! + " " + "ago"
                 
                 cell.comment_user_reply.attributedText = getAttributedText(firstString: "Reply", secondString: dateDifference, color: AppConstant.orangeColor)
                 
                 cell.setBadgeButton(comment: comment)
+                
             }
             
             nCell = cell
@@ -445,9 +480,9 @@ extension FameViewController: UITableViewDelegate, UITableViewDataSource  {
     }
     
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-    
-        if scrollView == tableView{
         
+        if scrollView == tableView{
+            
             if ((scrollView.contentOffset.y + scrollView.frame.size.height) >= scrollView.contentSize.height){
                 if hasNext{
                     DispatchQueue.main.async {

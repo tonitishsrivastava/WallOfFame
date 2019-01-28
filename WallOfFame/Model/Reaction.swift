@@ -33,7 +33,7 @@ struct Reaction {
         return reactions
     }
     
-    func getReaction() -> [[String:Int]]{
+    func getAvailableReaction() -> [[String:Int]]{
         let reactions = [["like":like!],["haha":haha!],["dab":dab!],["crazy":crazy!],["meh":meh!],["takeMyMoney":takeMyMoney!]]
         
         var availableReaction = [[String: Int]]()

@@ -32,7 +32,6 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
     
     var reactionClicked = false
     
-    
     var playerLayer: AVPlayerLayer?
     var player: AVPlayer?
     var playerItem:AVPlayerItem?
@@ -59,14 +58,9 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
     
     func stopPlayer() {
         if player?.isPlaying == true {
-            print("stopped")
             player?.pause()
             player = nil
-            print("player deallocated")
-        } else {
-            print("player was already deallocated")
         }
-        
         
     }
     
@@ -75,32 +69,7 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
             player?.pause()
         }
     }
-    
-    
-    @objc func playbackSliderValueChanged(_ playbackSlider:UISlider)
-    {
-        
-        let seconds : Int64 = Int64(playbackSlider.value)
-        let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
-        
-        player!.seek(to: targetTime)
-        
-        if player!.rate == 0
-        {
-            player?.play()
-        }
-    }
-    
-    func getProgress()->Float{
-        var theCurrentTime = 0.0
-        var theCurrentDuration = 0.0
-        if let curntTime = player?.currentTime, let duration = playerItem?.asset.duration {
-            theCurrentTime = CMTimeGetSeconds(curntTime())
-            theCurrentDuration = CMTimeGetSeconds(duration)
-        }
-        return Float(theCurrentTime / theCurrentDuration)
-    }
-    
+
     
     @objc func playButtonTapped(_ sender:UIButton)
     {
@@ -115,11 +84,9 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
     }
     
     @objc func playerDidFinishPlaying(note: NSNotification) {
-        print("Video Finished")
         player?.rate = 0
         player?.seek(to: .zero)
         playButton!.isHidden = false
-        
     }
     
     override func awakeFromNib() {
@@ -144,7 +111,7 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = reactionCollectionView.dequeueReusableCell(withReuseIdentifier: "reactions", for: indexPath) as! ReactionCollectionViewCell
         
-        let rction = reaction?.getReaction()
+        let rction = reaction?.getAvailableReaction()
         
         let rctn = rction![indexPath.row]
         
@@ -165,18 +132,9 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize{
-        let size = CGSize(width: 30, height: 30)
-        
-        return size
-        
+        return CGSize(width: 30, height: 30)
     }
 
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-
-        
-        // Configure the view for the selected state
-    }
 
     override func prepareForReuse() {
         // your cleanup code
@@ -188,6 +146,8 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
         playerLayer?.removeFromSuperlayer()
         playButton?.removeFromSuperview()
         player = nil
+        giveReactionView.isHidden = true
+        reactionClicked = false
     }
     
     func setViewData(post: Post){
@@ -220,24 +180,11 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
             
             videoView.addSubview(playButton!)
             
-            
-            
             NotificationCenter.default.addObserver(self, selector: #selector(playerDidFinishPlaying),
                                                    name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: player!.currentItem)
             
           
         }
-        
-        self.postCardView.clipsToBounds = true
-        postCardView.layer.cornerRadius = 20
-        postCardView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-        
-    
-    }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        
         
     }
     
@@ -251,7 +198,6 @@ class PostTableViewCell: UITableViewCell, UICollectionViewDelegate, UICollection
             giveReactionView.isHidden = true
             reactionClicked = false
         }
-        
         
     }
     
