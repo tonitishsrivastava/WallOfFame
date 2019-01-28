@@ -16,4 +16,12 @@ struct Comment {
     var reaction: Reaction?
     var date: Date?
     
+    init(comment_id: String, comment: String, user: User, reaction: Reaction, date: Date) {
+        self.comment_id = comment_id
+        self.comment = comment
+        self.user = user
+        self.reaction = reaction
+        self.date = date
+    }
+    
 }

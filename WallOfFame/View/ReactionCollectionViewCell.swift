@@ -10,4 +10,5 @@ import UIKit
 
 class ReactionCollectionViewCell: UICollectionViewCell {
     
+    @IBOutlet weak var reactionView: UIView!
 }

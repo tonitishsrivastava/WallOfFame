@@ -16,4 +16,12 @@ struct User {
     var imageUrl: String?
     var date: Date?
     
+    init(user_id: String, name: String, videoUrl: String, imageUrl: String, date: Date) {
+        self.user_id = user_id
+        self.name = name
+        self.videoUrl = videoUrl
+        self.imageUrl = imageUrl
+        self.date = date
+    }
+    
 }
